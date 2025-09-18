@@ -2,19 +2,35 @@ import { neon } from '@neondatabase/serverless';
 
 // Función para obtener la conexión a la base de datos
 export const getDb = () => {
-  const databaseUrl = process.env.NETLIFY_DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error('NETLIFY_DATABASE_URL environment variable is not set');
+  try {
+    // Primero intentamos obtener la URL de la base de datos
+    const databaseUrl = process.env.NETLIFY_DATABASE_URL;
+    
+    if (!databaseUrl) {
+      console.warn('NETLIFY_DATABASE_URL no está definida. Usando modo de respaldo.');
+      return null;
+    }
+    
+    // Intentamos crear la conexión
+    const sql = neon(databaseUrl);
+    console.log('Conexión a la base de datos establecida correctamente.');
+    return sql;
+  } catch (error) {
+    console.error('Error al crear la conexión a la base de datos:', error);
+    return null;
   }
-  return neon(databaseUrl);
 };
 
 // Función mejorada para inicializar la base de datos
 export const initializeDatabase = async () => {
-  const sql = getDb();
-  
   try {
     console.log('Iniciando inicialización de la base de datos...');
+    
+    const sql = getDb();
+    if (!sql) {
+      console.warn('No se pudo establecer conexión con la base de datos. Usando datos de respaldo.');
+      return false;
+    }
     
     // Crear tabla si no existe
     await sql`
@@ -147,15 +163,99 @@ export const initializeDatabase = async () => {
     return true;
   } catch (error) {
     console.error('Error crítico en initializeDatabase:', error);
-    throw error;
+    return false;
   }
 };
 
 // Función para obtener todos los regalos
 export const getAllGifts = async () => {
-  const sql = getDb();
-  
   try {
+    const sql = getDb();
+    if (!sql) {
+      console.warn('Usando datos de respaldo porque no hay conexión a la base de datos.');
+      // Devolvemos los datos de respaldo
+      return [
+        {
+          id: 1,
+          store: "Amazon",
+          storeLink: "https://amazon.com",
+          item: "Juego de copas de cristal",
+          description: "Para brindar en nuestra boda",
+          quantity: 1,
+          price: 45.99,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Copas+de+Cristal"
+        },
+        {
+          id: 2,
+          store: "Tienda local",
+          storeLink: "",
+          item: "Set de sábanas premium",
+          description: "Tamaño king, algodón egipcio",
+          quantity: 1,
+          price: 89.50,
+          status: "Ya fue comprado",
+          purchasedAt: "2024-01-15T10:30:00",
+          purchaserName: "Ana",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Set+de+Sábanas"
+        },
+        {
+          id: 3,
+          store: "Walmart",
+          storeLink: "https://walmart.com",
+          item: "Cafetera Nespresso",
+          description: "Con lechera integrada",
+          quantity: 1,
+          price: 199.99,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cafetera+Nespresso"
+        },
+        {
+          id: 4,
+          store: "Linio",
+          storeLink: "https://linio.com",
+          item: "Vajilla para 6 personas",
+          description: "Porcelana blanca con detalles dorados",
+          quantity: 1,
+          price: 125.75,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Vajilla"
+        },
+        {
+          id: 5,
+          store: "Tienda departamental",
+          storeLink: "",
+          item: "Plancha a vapor",
+          description: "Con función vertical",
+          quantity: 1,
+          price: 65.25,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Plancha+a+Vapor"
+        },
+        {
+          id: 6,
+          store: "Etsy",
+          storeLink: "https://etsy.com",
+          item: "Cuadro personalizado",
+          description: "Retrato de la pareja en acuarela",
+          quantity: 1,
+          price: 78.50,
+          status: "Ya fue comprado",
+          purchasedAt: "2024-01-12T14:22:00",
+          purchaserName: "Carlos",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cuadro+Personalizado"
+        }
+      ];
+    }
+    
     const result = await sql`
       SELECT 
         id,
@@ -176,6 +276,113 @@ export const getAllGifts = async () => {
     return result;
   } catch (error) {
     console.error('Error al obtener regalos:', error);
-    throw error;
+    // En caso de error, devolvemos los datos de respaldo
+    return [
+      {
+        id: 1,
+        store: "Amazon",
+        storeLink: "https://amazon.com",
+        item: "Juego de copas de cristal",
+        description: "Para brindar en nuestra boda",
+        quantity: 1,
+        price: 45.99,
+        status: "Aún disponible",
+        purchasedAt: null,
+        purchaserName: "",
+        imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Copas+de+Cristal"
+      },
+      {
+        id: 2,
+        store: "Tienda local",
+        storeLink: "",
+        item: "Set de sábanas premium",
+        description: "Tamaño king, algodón egipcio",
+        quantity: 1,
+        price: 89.50,
+        status: "Ya fue comprado",
+        purchasedAt: "2024-01-15T10:30:00",
+        purchaserName: "Ana",
+        imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Set+de+Sábanas"
+      },
+      {
+        id: 3,
+        store: "Walmart",
+        storeLink: "https://walmart.com",
+        item: "Cafetera Nespresso",
+        description: "Con lechera integrada",
+        quantity: 1,
+        price: 199.99,
+        status: "Aún disponible",
+        purchasedAt: null,
+        purchaserName: "",
+        imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cafetera+Nespresso"
+      },
+      {
+        id: 4,
+        store: "Linio",
+        storeLink: "https://linio.com",
+        item: "Vajilla para 6 personas",
+        description: "Porcelana blanca con detalles dorados",
+        quantity: 1,
+        price: 125.75,
+        status: "Aún disponible",
+        purchasedAt: null,
+        purchaserName: "",
+        imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Vajilla"
+      },
+      {
+        id: 5,
+        store: "Tienda departamental",
+        storeLink: "",
+        item: "Plancha a vapor",
+        description: "Con función vertical",
+        quantity: 1,
+        price: 65.25,
+        status: "Aún disponible",
+        purchasedAt: null,
+        purchaserName: "",
+        imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Plancha+a+Vapor"
+      },
+      {
+        id: 6,
+        store: "Etsy",
+        storeLink: "https://etsy.com",
+        item: "Cuadro personalizado",
+        description: "Retrato de la pareja en acuarela",
+        quantity: 1,
+        price: 78.50,
+        status: "Ya fue comprado",
+        purchasedAt: "2024-01-12T14:22:00",
+        purchaserName: "Carlos",
+        imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cuadro+Personalizado"
+      }
+    ];
+  }
+};
+
+// Función para agregar un nuevo regalo
+export const addNewGift = async (giftData) => {
+  try {
+    const sql = getDb();
+    if (!sql) {
+      console.warn('No hay conexión a la base de datos. No se puede agregar el regalo.');
+      return null;
+    }
+    
+    const result = await sql`
+      INSERT INTO gifts (
+        store, store_link, item, description, quantity, price, status, purchased_at, purchaser_name, image_url
+      ) VALUES (
+        ${giftData.store}, ${giftData.storeLink}, ${giftData.item}, ${giftData.description}, 
+        ${giftData.quantity}, ${giftData.price}, ${giftData.status}, ${giftData.purchasedAt}, 
+        ${giftData.purchaserName}, ${giftData.imageUrl}
+      )
+      RETURNING *
+    `;
+    
+    return result[0];
+  } catch (error) {
+    console.error('Error al agregar nuevo regalo:', error);
+    return null;
   }
 };

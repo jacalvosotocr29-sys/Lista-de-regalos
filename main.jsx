@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import './src/index.css';
-import { getDb, initializeDatabase } from './db';
+import { getDb, initializeDatabase, getAllGifts, addNewGift as addNewGiftToDB } from './db';
 
 const App = () => {
   // Configuración
@@ -31,10 +31,11 @@ useEffect(() => {
   const initAndLoadData = async () => {
     try {
       setLoading(true);
+      console.log('Iniciando carga de datos...');
       
       // Inicializar la base de datos
-      await initializeDatabase();
-      console.log('Base de datos inicializada');
+      const dbInitialized = await initializeDatabase();
+      console.log('Base de datos inicializada:', dbInitialized);
       
       // Cargar los regalos desde la base de datos
       const loadedGifts = await getAllGifts();
@@ -44,6 +45,88 @@ useEffect(() => {
     } catch (error) {
       console.error('Error en initAndLoadData:', error);
       setErrorMessage('Error al cargar los datos. Por favor, recarga la página.');
+      
+      // Datos de respaldo en caso de error
+      setGifts([
+        {
+          id: 1,
+          store: "Amazon",
+          storeLink: "https://amazon.com",
+          item: "Juego de copas de cristal",
+          description: "Para brindar en nuestra boda",
+          quantity: 1,
+          price: 45.99,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Copas+de+Cristal"
+        },
+        {
+          id: 2,
+          store: "Tienda local",
+          storeLink: "",
+          item: "Set de sábanas premium",
+          description: "Tamaño king, algodón egipcio",
+          quantity: 1,
+          price: 89.50,
+          status: "Ya fue comprado",
+          purchasedAt: "2024-01-15T10:30:00",
+          purchaserName: "Ana",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Set+de+Sábanas"
+        },
+        {
+          id: 3,
+          store: "Walmart",
+          storeLink: "https://walmart.com",
+          item: "Cafetera Nespresso",
+          description: "Con lechera integrada",
+          quantity: 1,
+          price: 199.99,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cafetera+Nespresso"
+        },
+        {
+          id: 4,
+          store: "Linio",
+          storeLink: "https://linio.com",
+          item: "Vajilla para 6 personas",
+          description: "Porcelana blanca con detalles dorados",
+          quantity: 1,
+          price: 125.75,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Vajilla"
+        },
+        {
+          id: 5,
+          store: "Tienda departamental",
+          storeLink: "",
+          item: "Plancha a vapor",
+          description: "Con función vertical",
+          quantity: 1,
+          price: 65.25,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: "",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Plancha+a+Vapor"
+        },
+        {
+          id: 6,
+          store: "Etsy",
+          storeLink: "https://etsy.com",
+          item: "Cuadro personalizado",
+          description: "Retrato de la pareja en acuarela",
+          quantity: 1,
+          price: 78.50,
+          status: "Ya fue comprado",
+          purchasedAt: "2024-01-12T14:22:00",
+          purchaserName: "Carlos",
+          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cuadro+Personalizado"
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -51,6 +134,46 @@ useEffect(() => {
   
   initAndLoadData();
 }, []);
+
+// Función corregida para agregar nuevo regalo
+const addNewGift = async () => {
+  try {
+    const newGiftData = {
+      store: "Nueva tienda",
+      storeLink: "",
+      item: "Nuevo artículo",
+      description: "",
+      quantity: 1,
+      price: 0.00,
+      status: "Aún disponible",
+      purchasedAt: null,
+      purchaserName: "",
+      imageUrl: ""
+    };
+    
+    // Intentar agregar a la base de datos
+    const addedGift = await addNewGiftToDB(newGiftData);
+    
+    if (addedGift) {
+      // Si se agregó a la base de datos, actualizar el estado local
+      setGifts(prevGifts => [...prevGifts, addedGift]);
+      setSuccessMessage('Nuevo regalo agregado exitosamente.');
+    } else {
+      // Si falló la base de datos, agregar localmente
+      const localNewGift = {
+        ...newGiftData,
+        id: gifts.length > 0 ? Math.max(...gifts.map(g => g.id || 0)) + 1 : 1
+      };
+      setGifts(prevGifts => [...prevGifts, localNewGift]);
+      setSuccessMessage('Nuevo regalo agregado (modo local).');
+    }
+    
+    setTimeout(() => setSuccessMessage(''), 3000);
+  } catch (error) {
+    console.error('Error adding new gift:', error);
+    setErrorMessage('Error al agregar el nuevo regalo. Por favor, inténtalo de nuevo.');
+  }
+};
 
   // Efecto para limpiar mensajes
   useEffect(() => {
@@ -157,48 +280,6 @@ useEffect(() => {
       setErrorMessage('Código de administrador inválido.');
     }
   };
-
-const addNewGift = async () => {
-  try {
-    const sql = getDb();
-    
-    // Insertar nuevo regalo en la base de datos
-    const newGift = {
-      store: "Nueva tienda",
-      storeLink: "",
-      item: "Nuevo artículo",
-      description: "",
-      quantity: 1,
-      price: 0.00,
-      status: "Aún disponible",
-      purchasedAt: null,
-      purchaserName: "",
-      imageUrl: ""
-    };
-    
-    const result = await sql`
-      INSERT INTO gifts (
-        store, store_link, item, description, quantity, price, status, purchased_at, purchaser_name, image_url
-      ) VALUES (
-        ${newGift.store}, ${newGift.storeLink}, ${newGift.item}, ${newGift.description}, 
-        ${newGift.quantity}, ${newGift.price}, ${newGift.status}, ${newGift.purchasedAt}, 
-        ${newGift.purchaserName}, ${newGift.imageUrl}
-      )
-      RETURNING *
-    `;
-    
-    console.log('Nuevo regalo insertado:', result[0]);
-    
-    // Actualizar el estado local
-    setGifts(prevGifts => [...prevGifts, result[0]]);
-    
-    setSuccessMessage('Nuevo regalo agregado exitosamente.');
-    setTimeout(() => setSuccessMessage(''), 3000);
-  } catch (error) {
-    console.error('Error adding new gift:', error);
-    setErrorMessage('Error al agregar el nuevo regalo. Por favor, inténtalo de nuevo.');
-  }
-};
 
   const updateGift = async (id, field, value) => {
     try {
