@@ -1,6 +1,7 @@
 {
   "name": "lista-regalos-cafecito",
   "version": "1.0.0",
+  "type": "module",
   "description": "Lista de regalos de boda para Mauren & Jose Andrés",
   "private": true,
   "scripts": {
