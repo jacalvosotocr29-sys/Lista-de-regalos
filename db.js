@@ -1,8 +1,12 @@
-import { neon } from '@netlify/neon';
+import { neon } from '@neondatabase/serverless';
 
 // Función para inicializar la conexión a la base de datos
 export const getDb = () => {
-  return neon();
+  const databaseUrl = process.env.NETLIFY_DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('NETLIFY_DATABASE_URL environment variable is not set');
+  }
+  return neon(databaseUrl);
 };
 
 // Función para inicializar la tabla de regalos si no existe
