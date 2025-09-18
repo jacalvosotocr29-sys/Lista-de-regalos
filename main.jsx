@@ -26,43 +26,31 @@ const App = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [savingStates, setSavingStates] = useState({}); // Estado para controlar el guardado individual
 
-  // Efecto para inicializar la base de datos y cargar los datos
-  useEffect(() => {
-    const initAndLoadData = async () => {
-      try {
-        // Inicializar la base de datos
-        await initializeDatabase();
-        
-        // Cargar los regalos desde la base de datos
-        const sql = getDb();
-        const loadedGifts = await sql`
-          SELECT 
-            id,
-            store,
-            store_link as "storeLink",
-            item,
-            description,
-            quantity,
-            price,
-            status,
-            purchased_at as "purchasedAt",
-            purchaser_name as "purchaserName",
-            image_url as "imageUrl"
-          FROM gifts
-          ORDER BY id
-        `;
-        
-        setGifts(loadedGifts);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setErrorMessage('Error al cargar los datos. Por favor, recarga la página.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    initAndLoadData();
-  }, []);
+// Efecto para inicializar la base de datos y cargar los datos
+useEffect(() => {
+  const initAndLoadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Inicializar la base de datos
+      await initializeDatabase();
+      console.log('Base de datos inicializada');
+      
+      // Cargar los regalos desde la base de datos
+      const loadedGifts = await getAllGifts();
+      console.log('Regalos cargados:', loadedGifts);
+      
+      setGifts(loadedGifts);
+    } catch (error) {
+      console.error('Error en initAndLoadData:', error);
+      setErrorMessage('Error al cargar los datos. Por favor, recarga la página.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  initAndLoadData();
+}, []);
 
   // Efecto para limpiar mensajes
   useEffect(() => {
@@ -170,45 +158,47 @@ const App = () => {
     }
   };
 
-  const addNewGift = async () => {
-    try {
-      const sql = getDb();
-      
-      // Insertar nuevo regalo en la base de datos
-      const newGift = {
-        store: "",
-        storeLink: "",
-        item: "",
-        description: "",
-        quantity: 1,
-        price: 0,
-        status: "Aún disponible",
-        purchasedAt: null,
-        purchaserName: "",
-        imageUrl: ""
-      };
-      
-      const result = await sql`
-        INSERT INTO gifts (
-          store, store_link, item, description, quantity, price, status, purchased_at, purchaser_name, image_url
-        ) VALUES (
-          ${newGift.store}, ${newGift.storeLink}, ${newGift.item}, ${newGift.description}, 
-          ${newGift.quantity}, ${newGift.price}, ${newGift.status}, ${newGift.purchasedAt}, 
-          ${newGift.purchaserName}, ${newGift.imageUrl}
-        )
-        RETURNING *
-      `;
-      
-      // Actualizar el estado local
-      setGifts(prevGifts => [...prevGifts, result[0]]);
-      
-      setSuccessMessage('Nuevo regalo agregado exitosamente.');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
-      console.error('Error adding new gift:', error);
-      setErrorMessage('Error al agregar el nuevo regalo. Por favor, inténtalo de nuevo.');
-    }
-  };
+const addNewGift = async () => {
+  try {
+    const sql = getDb();
+    
+    // Insertar nuevo regalo en la base de datos
+    const newGift = {
+      store: "Nueva tienda",
+      storeLink: "",
+      item: "Nuevo artículo",
+      description: "",
+      quantity: 1,
+      price: 0.00,
+      status: "Aún disponible",
+      purchasedAt: null,
+      purchaserName: "",
+      imageUrl: ""
+    };
+    
+    const result = await sql`
+      INSERT INTO gifts (
+        store, store_link, item, description, quantity, price, status, purchased_at, purchaser_name, image_url
+      ) VALUES (
+        ${newGift.store}, ${newGift.storeLink}, ${newGift.item}, ${newGift.description}, 
+        ${newGift.quantity}, ${newGift.price}, ${newGift.status}, ${newGift.purchasedAt}, 
+        ${newGift.purchaserName}, ${newGift.imageUrl}
+      )
+      RETURNING *
+    `;
+    
+    console.log('Nuevo regalo insertado:', result[0]);
+    
+    // Actualizar el estado local
+    setGifts(prevGifts => [...prevGifts, result[0]]);
+    
+    setSuccessMessage('Nuevo regalo agregado exitosamente.');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  } catch (error) {
+    console.error('Error adding new gift:', error);
+    setErrorMessage('Error al agregar el nuevo regalo. Por favor, inténtalo de nuevo.');
+  }
+};
 
   const updateGift = async (id, field, value) => {
     try {
