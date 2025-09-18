@@ -1,0 +1,22 @@
+{
+  "name": "lista-de-regalos",
+  "private": true,
+{
+  "name": "lista-regalos-cafecito",
+  "version": "1.0.0",
+  "description": "Lista de regalos de boda para Mauren & Jose Andrés",
+  "main": "index.html",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "vite": "^4.3.0"
+  }
+}
