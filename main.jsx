@@ -151,84 +151,130 @@ const addNewGift = async () => {
       imageUrl: ""
     };
     
-    // Intentar agregar a la base de datos
-    const addedGift = await addNewGiftToDB(newGiftData);
+// Reemplaza la función updateGift con esta versión:
+const updateGift = async (id, field, value) => {
+  try {
+    // Actualizar en la base de datos
+    const updatedGift = await window.updateGift(id, field, value);
     
-    if (addedGift) {
-      // Si se agregó a la base de datos, actualizar el estado local
-      setGifts(prevGifts => [...prevGifts, addedGift]);
-      setSuccessMessage('Nuevo regalo agregado exitosamente.');
+    if (updatedGift) {
+      // Actualizar el estado local
+      setGifts(prevGifts => 
+        prevGifts.map(gift => 
+          gift.id === id ? {...gift, [field]: value} : gift
+        )
+      );
     } else {
-      // Si falló la base de datos, agregar localmente
-      const localNewGift = {
-        ...newGiftData,
-        id: gifts.length > 0 ? Math.max(...gifts.map(g => g.id || 0)) + 1 : 1
-      };
-      setGifts(prevGifts => [...prevGifts, localNewGift]);
-      setSuccessMessage('Nuevo regalo agregado (modo local).');
+      // Si falla la base de datos, actualizar localmente
+      setGifts(prevGifts => 
+        prevGifts.map(gift => 
+          gift.id === id ? {...gift, [field]: value} : gift
+        )
+      );
+      console.warn('Actualización local realizada (modo offline)');
+    }
+  } catch (error) {
+    console.error('Error updating gift:', error);
+    setErrorMessage('Error al actualizar el regalo. Por favor, inténtalo de nuevo.');
+    
+    // Actualizar localmente como respaldo
+    setGifts(prevGifts => 
+      prevGifts.map(gift => 
+        gift.id === id ? {...gift, [field]: value} : gift
+      )
+    );
+  }
+};
+
+// Reemplaza la función deleteGift con esta versión:
+const deleteGift = async (id) => {
+  try {
+    // Eliminar de la base de datos
+    const success = await window.deleteGift(id);
+    
+    if (success) {
+      // Actualizar el estado local
+      setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
+      setSuccessMessage('Regalo eliminado exitosamente.');
+    } else {
+      // Si falla la base de datos, eliminar localmente
+      setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
+      setSuccessMessage('Regalo eliminado (modo local).');
     }
     
     setTimeout(() => setSuccessMessage(''), 3000);
   } catch (error) {
-    console.error('Error adding new gift:', error);
-    setErrorMessage('Error al agregar el nuevo regalo. Por favor, inténtalo de nuevo.');
+    console.error('Error deleting gift:', error);
+    setErrorMessage('Error al eliminar el regalo. Por favor, inténtalo de nuevo.');
+    
+    // Eliminar localmente como respaldo
+    setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
+    setSuccessMessage('Regalo eliminado (modo local).');
+    setTimeout(() => setSuccessMessage(''), 3000);
   }
 };
 
-  // Efecto para limpiar mensajes
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
-
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
-
-  // Función para cerrar sesión
-  const handleLogout = () => {
-    setUserRole(null);
-    setCurrentPage('home');
-    setAccessCode('');
-    setAdminCode('');
-    setErrorMessage('');
-    setSuccessMessage('');
-  };
-
-  // Funciones de acceso
-  const handleAccessSubmit = (e) => {
-    e.preventDefault();
-    if (accessCode === CODIGO_COMPARTIDO) {
-      setUserRole('guest');
-      setCurrentPage('gifts');
-    } else if (accessCode === CODIGO_ADMIN) {
-      setUserRole('admin');
-      setCurrentPage('admin');
+// Reemplaza la función resetGiftStatus con esta versión:
+const resetGiftStatus = async (id) => {
+  try {
+    // Reiniciar estado en la base de datos
+    const updatedGift = await window.resetGiftStatus(id);
+    
+    if (updatedGift) {
+      // Actualizar el estado local
+      setGifts(prevGifts => 
+        prevGifts.map(gift => 
+          gift.id === id ? {
+            ...gift,
+            status: "Aún disponible",
+            purchasedAt: null,
+            purchaserName: ""
+          } : gift
+        )
+      );
+      setSuccessMessage('Estado del regalo reiniciado exitosamente.');
     } else {
-      setErrorMessage('Código inválido. Inténtalo de nuevo.');
+      // Si falla la base de datos, reiniciar localmente
+      setGifts(prevGifts => 
+        prevGifts.map(gift => 
+          gift.id === id ? {
+            ...gift,
+            status: "Aún disponible",
+            purchasedAt: null,
+            purchaserName: ""
+          } : gift
+        )
+      );
+      setSuccessMessage('Estado del regalo reiniciado (modo local).');
     }
-  };
+    
+    setTimeout(() => setSuccessMessage(''), 3000);
+  } catch (error) {
+    console.error('Error resetting gift status:', error);
+    setErrorMessage('Error al reiniciar el estado del regalo. Por favor, inténtalo de nuevo.');
+    
+    // Reiniciar localmente como respaldo
+    setGifts(prevGifts => 
+      prevGifts.map(gift => 
+        gift.id === id ? {
+          ...gift,
+          status: "Aún disponible",
+          purchasedAt: null,
+          purchaserName: ""
+        } : gift
+      )
+    );
+    setSuccessMessage('Estado del regalo reiniciado (modo local).');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  }
+};
 
-  // Funciones para la lista de regalos
-  const handlePurchaseClick = (giftId) => {
-    const gift = gifts.find(g => g.id === giftId);
-    if (gift.status === "Ya fue comprado") {
-      setErrorMessage('Este artículo ya fue comprado por otra persona.');
-      return;
-    }
-    setSelectedGiftId(giftId);
-    setShowConfirmModal(true);
-  };
-
-  const confirmPurchase = async () => {
-    try {
-      const sql = getDb();
-      
+// Reemplaza la función confirmPurchase con esta versión:
+const confirmPurchase = async () => {
+  try {
+    const sql = getDb();
+    
+    if (sql) {
       // Actualizar el regalo en la base de datos
       const result = await sql`
         UPDATE gifts 
@@ -257,18 +303,50 @@ const addNewGift = async () => {
           } : gift
         )
       );
-      
-      setShowConfirmModal(false);
-      setPurchaserName('');
-      setSuccessMessage('¡Gracias por tu regalo! Este artículo ya no aparecerá como disponible.');
-      setTimeout(() => {
-        setCurrentPage('thankYou');
-      }, 2000);
-    } catch (error) {
-      console.error('Error purchasing gift:', error);
-      setErrorMessage('Error al marcar el regalo como comprado. Por favor, inténtalo de nuevo.');
+    } else {
+      // Modo offline - actualizar localmente
+      setGifts(prevGifts => 
+        prevGifts.map(gift => 
+          gift.id === selectedGiftId ? {
+            ...gift,
+            status: "Ya fue comprado",
+            purchasedAt: new Date().toISOString(),
+            purchaserName: purchaserName || ""
+          } : gift
+        )
+      );
     }
-  };
+    
+    setShowConfirmModal(false);
+    setPurchaserName('');
+    setSuccessMessage('¡Gracias por tu regalo! Este artículo ya no aparecerá como disponible.');
+    setTimeout(() => {
+      setCurrentPage('thankYou');
+    }, 2000);
+  } catch (error) {
+    console.error('Error purchasing gift:', error);
+    setErrorMessage('Error al marcar el regalo como comprado. Por favor, inténtalo de nuevo.');
+    
+    // Intentar actualizar localmente como respaldo
+    setGifts(prevGifts => 
+      prevGifts.map(gift => 
+        gift.id === selectedGiftId ? {
+          ...gift,
+          status: "Ya fue comprado",
+          purchasedAt: new Date().toISOString(),
+          purchaserName: purchaserName || ""
+        } : gift
+      )
+    );
+    
+    setShowConfirmModal(false);
+    setPurchaserName('');
+    setSuccessMessage('¡Gracias por tu regalo! (modo local)');
+    setTimeout(() => {
+      setCurrentPage('thankYou');
+    }, 2000);
+  }
+};
 
   // Funciones de administración
   const handleAdminAccess = (e) => {

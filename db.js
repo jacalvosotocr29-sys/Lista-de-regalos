@@ -386,3 +386,90 @@ export const addNewGift = async (giftData) => {
     return null;
   }
 };
+
+// Función para actualizar un regalo
+export const updateGift = async (id, field, value) => {
+  try {
+    const sql = getDb();
+    if (!sql) {
+      console.warn('No hay conexión a la base de datos. No se puede actualizar el regalo.');
+      return null;
+    }
+    
+    // Mapear los nombres de campos de JavaScript a SQL
+    const fieldMap = {
+      'storeLink': 'store_link',
+      'purchasedAt': 'purchased_at',
+      'purchaserName': 'purchaser_name',
+      'imageUrl': 'image_url'
+    };
+    
+    const dbField = fieldMap[field] || field;
+    
+    // Actualizar el campo en la base de datos
+    const result = await sql`
+      UPDATE gifts 
+      SET ${sql(dbField)} = ${value}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    
+    return result[0];
+  } catch (error) {
+    console.error(`Error al actualizar el regalo (ID: ${id}, campo: ${field}):`, error);
+    throw error;
+  }
+};
+
+// Función para eliminar un regalo
+export const deleteGift = async (id) => {
+  try {
+    const sql = getDb();
+    if (!sql) {
+      console.warn('No hay conexión a la base de datos. No se puede eliminar el regalo.');
+      return false;
+    }
+    
+    await sql`
+      DELETE FROM gifts 
+      WHERE id = ${id}
+    `;
+    
+    return true;
+  } catch (error) {
+    console.error(`Error al eliminar el regalo (ID: ${id}):`, error);
+    throw error;
+  }
+};
+
+// Función para reiniciar el estado de un regalo
+export const resetGiftStatus = async (id) => {
+  try {
+    const sql = getDb();
+    if (!sql) {
+      console.warn('No hay conexión a la base de datos. No se puede reiniciar el estado del regalo.');
+      return null;
+    }
+    
+    const result = await sql`
+      UPDATE gifts 
+      SET 
+        status = 'Aún disponible',
+        purchased_at = NULL,
+        purchaser_name = ''
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    
+    return result[0];
+  } catch (error) {
+    console.error(`Error al reiniciar el estado del regalo (ID: ${id}):`, error);
+    throw error;
+  }
+};
+
+// Hacer las funciones accesibles globalmente
+window.addNewGift = addNewGift;
+window.updateGift = updateGift;
+window.deleteGift = deleteGift;
+window.resetGiftStatus = resetGiftStatus;
