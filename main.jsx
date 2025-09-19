@@ -359,88 +359,12 @@ const confirmPurchase = async () => {
     }
   };
 
-const updateGift = async (id, field, value) => {
-  try {
-    const sql = getDb();
-    const dbField = field === 'storeLink' ? 'store_link' : 
-                   field === 'purchasedAt' ? 'purchased_at' : 
-                   field === 'purchaserName' ? 'purchaser_name' : 
-                   field === 'imageUrl' ? 'image_url' : field;
-      
-    // Actualizar el campo en la base de datos
-    await sql`
-      UPDATE gifts 
-      SET ${sql(field)} = ${value}
-      WHERE id = ${id}
-    `;
-	
-  // Actualizar el estado local
-    setGifts(prevGifts => 
-      prevGifts.map(gift => 
-        gift.id === id ? {...gift, [field]: value} : gift
-      )
-    );
-  } catch (error) {
-    console.error('Error updating gift:', error);
-    setErrorMessage('Error al actualizar el regalo. Por favor, inténtalo de nuevo.');
-  }
-};
 
-const deleteGift = async (id) => {
-  try {
-    const sql = getDb();
-      
-    // Eliminar el regalo de la base de datos
-    await sql`
-      DELETE FROM gifts 
-      WHERE id = ${id}
-    `;
-      
-   // Actualizar el estado local
-    setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
-    
-    setSuccessMessage('Regalo eliminado exitosamente.');
-    setTimeout(() => setSuccessMessage(''), 3000);
-  } catch (error) {
-    console.error('Error deleting gift:', error);
-    setErrorMessage('Error al eliminar el regalo. Por favor, inténtalo de nuevo.');
-  }
-};
 
-const resetGiftStatus = async (id) => {
-  try {
-    const sql = getDb();
-	
-	
-      // Reiniciar el estado del regalo en la base de datos
-      await sql`
-        UPDATE gifts 
-        SET 
-          status = 'Aún disponible',
-          purchased_at = NULL,
-          purchaser_name = ''
-        WHERE id = ${id}
-      `;
-      
-    // Actualizar el estado local
-    setGifts(prevGifts => 
-      prevGifts.map(gift => 
-        gift.id === id ? {
-          ...gift,
-          status: "Aún disponible",
-          purchasedAt: null,
-          purchaserName: ""
-        } : gift
-      )
-    );
-    
-    setSuccessMessage('Estado del regalo reiniciado exitosamente.');
-    setTimeout(() => setSuccessMessage(''), 3000);
-  } catch (error) {
-    console.error('Error resetting gift status:', error);
-    setErrorMessage('Error al reiniciar el estado del regalo. Por favor, inténtalo de nuevo.');
-  }
-};
+
+
+
+
 
   // Función para guardar cambios individuales con confirmación visual
   const saveIndividualChanges = async (giftId) => {
