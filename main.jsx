@@ -26,215 +26,250 @@ const App = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [savingStates, setSavingStates] = useState({}); // Estado para controlar el guardado individual
 
-// Efecto para inicializar la base de datos y cargar los datos
-useEffect(() => {
-  const initAndLoadData = async () => {
-    try {
-      setLoading(true);
-      console.log('Iniciando carga de datos...');
-      
-      // Inicializar la base de datos
-      const dbInitialized = await initializeDatabase();
-      console.log('Base de datos inicializada:', dbInitialized);
-      
-      // Cargar los regalos desde la base de datos
-      const loadedGifts = await getAllGifts();
-      console.log('Regalos cargados:', loadedGifts);
-      
-      setGifts(loadedGifts);
-    } catch (error) {
-      console.error('Error en initAndLoadData:', error);
-      setErrorMessage('Error al cargar los datos. Por favor, recarga la página.');
-      
-      // Datos de respaldo en caso de error
-      setGifts([
-        {
-          id: 1,
-          store: "Amazon",
-          storeLink: "https://amazon.com",
-          item: "Juego de copas de cristal",
-          description: "Para brindar en nuestra boda",
-          quantity: 1,
-          price: 45.99,
-          status: "Aún disponible",
-          purchasedAt: null,
-          purchaserName: "",
-          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Copas+de+Cristal"
-        },
-        {
-          id: 2,
-          store: "Tienda local",
-          storeLink: "",
-          item: "Set de sábanas premium",
-          description: "Tamaño king, algodón egipcio",
-          quantity: 1,
-          price: 89.50,
-          status: "Ya fue comprado",
-          purchasedAt: "2024-01-15T10:30:00",
-          purchaserName: "Ana",
-          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Set+de+Sábanas"
-        },
-        {
-          id: 3,
-          store: "Walmart",
-          storeLink: "https://walmart.com",
-          item: "Cafetera Nespresso",
-          description: "Con lechera integrada",
-          quantity: 1,
-          price: 199.99,
-          status: "Aún disponible",
-          purchasedAt: null,
-          purchaserName: "",
-          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cafetera+Nespresso"
-        },
-        {
-          id: 4,
-          store: "Linio",
-          storeLink: "https://linio.com",
-          item: "Vajilla para 6 personas",
-          description: "Porcelana blanca con detalles dorados",
-          quantity: 1,
-          price: 125.75,
-          status: "Aún disponible",
-          purchasedAt: null,
-          purchaserName: "",
-          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Vajilla"
-        },
-        {
-          id: 5,
-          store: "Tienda departamental",
-          storeLink: "",
-          item: "Plancha a vapor",
-          description: "Con función vertical",
-          quantity: 1,
-          price: 65.25,
-          status: "Aún disponible",
-          purchasedAt: null,
-          purchaserName: "",
-          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Plancha+a+Vapor"
-        },
-        {
-          id: 6,
-          store: "Etsy",
-          storeLink: "https://etsy.com",
-          item: "Cuadro personalizado",
-          description: "Retrato de la pareja en acuarela",
-          quantity: 1,
-          price: 78.50,
-          status: "Ya fue comprado",
-          purchasedAt: "2024-01-12T14:22:00",
-          purchaserName: "Carlos",
-          imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cuadro+Personalizado"
-        }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  initAndLoadData();
-}, []);
-
-// Función corregida para agregar nuevo regalo
-const addNewGift = async () => {
-  try {
-    const newGiftData = {
-      store: "Nueva tienda",
-      storeLink: "",
-      item: "Nuevo artículo",
-      description: "",
-      quantity: 1,
-      price: 0.00,
-      status: "Aún disponible",
-      purchasedAt: null,
-      purchaserName: "",
-      imageUrl: ""
-    };
-    
-// Reemplaza la función updateGift con esta versión:
-const updateGift = async (id, field, value) => {
-  try {
-    // Actualizar en la base de datos
-    const updatedGift = await window.updateGift(id, field, value);
-    
-    if (updatedGift) {
-      // Actualizar el estado local
-      setGifts(prevGifts => 
-        prevGifts.map(gift => 
-          gift.id === id ? {...gift, [field]: value} : gift
-        )
-      );
-    } else {
-      // Si falla la base de datos, actualizar localmente
-      setGifts(prevGifts => 
-        prevGifts.map(gift => 
-          gift.id === id ? {...gift, [field]: value} : gift
-        )
-      );
-      console.warn('Actualización local realizada (modo offline)');
-    }
-  } catch (error) {
-    console.error('Error updating gift:', error);
-    setErrorMessage('Error al actualizar el regalo. Por favor, inténtalo de nuevo.');
-    
-    // Actualizar localmente como respaldo
-    setGifts(prevGifts => 
-      prevGifts.map(gift => 
-        gift.id === id ? {...gift, [field]: value} : gift
-      )
-    );
-  }
-};
-
-// Reemplaza la función deleteGift con esta versión:
-const deleteGift = async (id) => {
-  try {
-    // Eliminar de la base de datos
-    const success = await window.deleteGift(id);
-    
-    if (success) {
-      // Actualizar el estado local
-      setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
-      setSuccessMessage('Regalo eliminado exitosamente.');
-    } else {
-      // Si falla la base de datos, eliminar localmente
-      setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
-      setSuccessMessage('Regalo eliminado (modo local).');
-    }
-    
-    setTimeout(() => setSuccessMessage(''), 3000);
-  } catch (error) {
-    console.error('Error deleting gift:', error);
-    setErrorMessage('Error al eliminar el regalo. Por favor, inténtalo de nuevo.');
-    
-    // Eliminar localmente como respaldo
-    setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
-    setSuccessMessage('Regalo eliminado (modo local).');
-    setTimeout(() => setSuccessMessage(''), 3000);
-  }
-};
-
-// Reemplaza la función resetGiftStatus con esta versión:
-const resetGiftStatus = async (id) => {
-  try {
-    // Reiniciar estado en la base de datos
-    const updatedGift = await window.resetGiftStatus(id);
-    
-    if (updatedGift) {
-      // Actualizar el estado local
-      setGifts(prevGifts => 
-        prevGifts.map(gift => 
-          gift.id === id ? {
-            ...gift,
+  // Efecto para inicializar la base de datos y cargar los datos
+  useEffect(() => {
+    const initAndLoadData = async () => {
+      try {
+        setLoading(true);
+        console.log('Iniciando carga de datos...');
+        
+        // Inicializar la base de datos
+        const dbInitialized = await initializeDatabase();
+        console.log('Base de datos inicializada:', dbInitialized);
+        
+        // Cargar los regalos desde la base de datos
+        const loadedGifts = await getAllGifts();
+        console.log('Regalos cargados:', loadedGifts);
+        
+        setGifts(loadedGifts);
+      } catch (error) {
+        console.error('Error en initAndLoadData:', error);
+        setErrorMessage('Error al cargar los datos. Por favor, recarga la página.');
+        
+        // Datos de respaldo en caso de error
+        setGifts([
+          {
+            id: 1,
+            store: "Amazon",
+            storeLink: "https://amazon.com",
+            item: "Juego de copas de cristal",
+            description: "Para brindar en nuestra boda",
+            quantity: 1,
+            price: 45.99,
             status: "Aún disponible",
             purchasedAt: null,
-            purchaserName: ""
-          } : gift
+            purchaserName: "",
+            imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Copas+de+Cristal"
+          },
+          {
+            id: 2,
+            store: "Tienda local",
+            storeLink: "",
+            item: "Set de sábanas premium",
+            description: "Tamaño king, algodón egipcio",
+            quantity: 1,
+            price: 89.50,
+            status: "Ya fue comprado",
+            purchasedAt: "2024-01-15T10:30:00",
+            purchaserName: "Ana",
+            imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Set+de+Sábanas"
+          },
+          {
+            id: 3,
+            store: "Walmart",
+            storeLink: "https://walmart.com",
+            item: "Cafetera Nespresso",
+            description: "Con lechera integrada",
+            quantity: 1,
+            price: 199.99,
+            status: "Aún disponible",
+            purchasedAt: null,
+            purchaserName: "",
+            imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cafetera+Nespresso"
+          },
+          {
+            id: 4,
+            store: "Linio",
+            storeLink: "https://linio.com",
+            item: "Vajilla para 6 personas",
+            description: "Porcelana blanca con detalles dorados",
+            quantity: 1,
+            price: 125.75,
+            status: "Aún disponible",
+            purchasedAt: null,
+            purchaserName: "",
+            imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Vajilla"
+          },
+          {
+            id: 5,
+            store: "Tienda departamental",
+            storeLink: "",
+            item: "Plancha a vapor",
+            description: "Con función vertical",
+            quantity: 1,
+            price: 65.25,
+            status: "Aún disponible",
+            purchasedAt: null,
+            purchaserName: "",
+            imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Plancha+a+Vapor"
+          },
+          {
+            id: 6,
+            store: "Etsy",
+            storeLink: "https://etsy.com",
+            item: "Cuadro personalizado",
+            description: "Retrato de la pareja en acuarela",
+            quantity: 1,
+            price: 78.50,
+            status: "Ya fue comprado",
+            purchasedAt: "2024-01-12T14:22:00",
+            purchaserName: "Carlos",
+            imageUrl: "https://placehold.co/300x200/E6C073/556B2F?text=Cuadro+Personalizado"
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initAndLoadData();
+  }, []);
+
+  // Función corregida para agregar nuevo regalo
+  const addNewGift = async () => {
+    try {
+      const newGiftData = {
+        store: "Nueva tienda",
+        storeLink: "",
+        item: "Nuevo artículo",
+        description: "",
+        quantity: 1,
+        price: 0.00,
+        status: "Aún disponible",
+        purchasedAt: null,
+        purchaserName: "",
+        imageUrl: ""
+      };
+      
+      // Intentar agregar a la base de datos
+      const addedGift = await addNewGiftToDB(newGiftData);
+      
+      if (addedGift) {
+        // Si se agregó a la base de datos, actualizar el estado local
+        setGifts(prevGifts => [...prevGifts, addedGift]);
+        setSuccessMessage('Nuevo regalo agregado exitosamente.');
+      } else {
+        // Si falló la base de datos, agregar localmente
+        const localNewGift = {
+          ...newGiftData,
+          id: gifts.length > 0 ? Math.max(...gifts.map(g => g.id || 0)) + 1 : 1
+        };
+        setGifts(prevGifts => [...prevGifts, localNewGift]);
+        setSuccessMessage('Nuevo regalo agregado (modo local).');
+      }
+      
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error adding new gift:', error);
+      setErrorMessage('Error al agregar el nuevo regalo. Por favor, inténtalo de nuevo.');
+    }
+  };
+
+  // Reemplaza la función updateGift con esta versión:
+  const updateGift = async (id, field, value) => {
+    try {
+      // Actualizar en la base de datos
+      const updatedGift = await window.updateGift(id, field, value);
+      if (updatedGift) {
+        // Actualizar el estado local
+        setGifts(prevGifts => 
+          prevGifts.map(gift => 
+            gift.id === id ? {...gift, [field]: value} : gift
+          )
+        );
+      } else {
+        // Si falla la base de datos, actualizar localmente
+        setGifts(prevGifts => 
+          prevGifts.map(gift => 
+            gift.id === id ? {...gift, [field]: value} : gift
+          )
+        );
+        console.warn('Actualización local realizada (modo offline)');
+      }
+    } catch (error) {
+      console.error('Error updating gift:', error);
+      setErrorMessage('Error al actualizar el regalo. Por favor, inténtalo de nuevo.');
+      // Actualizar localmente como respaldo
+      setGifts(prevGifts => 
+        prevGifts.map(gift => 
+          gift.id === id ? {...gift, [field]: value} : gift
         )
       );
-      setSuccessMessage('Estado del regalo reiniciado exitosamente.');
-    } else {
-      // Si falla la base de datos, reiniciar localmente
+    }
+  };
+
+  // Reemplaza la función deleteGift con esta versión:
+  const deleteGift = async (id) => {
+    try {
+      // Eliminar de la base de datos
+      const success = await window.deleteGift(id);
+      if (success) {
+        // Actualizar el estado local
+        setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
+        setSuccessMessage('Regalo eliminado exitosamente.');
+      } else {
+        // Si falla la base de datos, eliminar localmente
+        setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
+        setSuccessMessage('Regalo eliminado (modo local).');
+      }
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error deleting gift:', error);
+      setErrorMessage('Error al eliminar el regalo. Por favor, inténtalo de nuevo.');
+      // Eliminar localmente como respaldo
+      setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
+      setSuccessMessage('Regalo eliminado (modo local).');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
+
+  // Reemplaza la función resetGiftStatus con esta versión:
+  const resetGiftStatus = async (id) => {
+    try {
+      // Reiniciar estado en la base de datos
+      const updatedGift = await window.resetGiftStatus(id);
+      if (updatedGift) {
+        // Actualizar el estado local
+        setGifts(prevGifts => 
+          prevGifts.map(gift => 
+            gift.id === id ? {
+              ...gift,
+              status: "Aún disponible",
+              purchasedAt: null,
+              purchaserName: ""
+            } : gift
+          )
+        );
+        setSuccessMessage('Estado del regalo reiniciado exitosamente.');
+      } else {
+        // Si falla la base de datos, reiniciar localmente
+        setGifts(prevGifts => 
+          prevGifts.map(gift => 
+            gift.id === id ? {
+              ...gift,
+              status: "Aún disponible",
+              purchasedAt: null,
+              purchaserName: ""
+            } : gift
+          )
+        );
+        setSuccessMessage('Estado del regalo reiniciado (modo local).');
+      }
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error resetting gift status:', error);
+      setErrorMessage('Error al reiniciar el estado del regalo. Por favor, inténtalo de nuevo.');
+      // Reiniciar localmente como respaldo
       setGifts(prevGifts => 
         prevGifts.map(gift => 
           gift.id === id ? {
@@ -246,65 +281,64 @@ const resetGiftStatus = async (id) => {
         )
       );
       setSuccessMessage('Estado del regalo reiniciado (modo local).');
+      setTimeout(() => setSuccessMessage(''), 3000);
     }
-    
-    setTimeout(() => setSuccessMessage(''), 3000);
-  } catch (error) {
-    console.error('Error resetting gift status:', error);
-    setErrorMessage('Error al reiniciar el estado del regalo. Por favor, inténtalo de nuevo.');
-    
-    // Reiniciar localmente como respaldo
-    setGifts(prevGifts => 
-      prevGifts.map(gift => 
-        gift.id === id ? {
-          ...gift,
-          status: "Aún disponible",
-          purchasedAt: null,
-          purchaserName: ""
-        } : gift
-      )
-    );
-    setSuccessMessage('Estado del regalo reiniciado (modo local).');
-    setTimeout(() => setSuccessMessage(''), 3000);
-  }
-};
+  };
 
-// Reemplaza la función confirmPurchase con esta versión:
-const confirmPurchase = async () => {
-  try {
-    const sql = getDb();
-    
-    if (sql) {
-      // Actualizar el regalo en la base de datos
-      const result = await sql`
-        UPDATE gifts 
-        SET 
-          status = 'Ya fue comprado',
-          purchased_at = ${new Date().toISOString()},
-          purchaser_name = ${purchaserName || ''}
-        WHERE id = ${selectedGiftId} AND status = 'Aún disponible'
-        RETURNING *
-      `;
-      
-      if (result.length === 0) {
-        // Alguien más ya compró este regalo
-        setErrorMessage('Este artículo ya fue comprado por otra persona.');
-        return;
+  // Reemplaza la función confirmPurchase con esta versión:
+  const confirmPurchase = async () => {
+    try {
+      const sql = getDb();
+      if (sql) {
+        // Actualizar el regalo en la base de datos
+        const result = await sql`
+          UPDATE gifts 
+          SET 
+            status = 'Ya fue comprado',
+            purchased_at = ${new Date().toISOString()},
+            purchaser_name = ${purchaserName || ''}
+          WHERE id = ${selectedGiftId} AND status = 'Aún disponible'
+          RETURNING *
+        `;
+        if (result.length === 0) {
+          // Alguien más ya compró este regalo
+          setErrorMessage('Este artículo ya fue comprado por otra persona.');
+          return;
+        }
+        // Actualizar el estado local
+        setGifts(prevGifts => 
+          prevGifts.map(gift => 
+            gift.id === selectedGiftId ? {
+              ...gift,
+              status: "Ya fue comprado",
+              purchasedAt: new Date().toISOString(),
+              purchaserName: purchaserName || ""
+            } : gift
+          )
+        );
+      } else {
+        // Modo offline - actualizar localmente
+        setGifts(prevGifts => 
+          prevGifts.map(gift => 
+            gift.id === selectedGiftId ? {
+              ...gift,
+              status: "Ya fue comprado",
+              purchasedAt: new Date().toISOString(),
+              purchaserName: purchaserName || ""
+            } : gift
+          )
+        );
       }
-      
-      // Actualizar el estado local
-    setGifts(prevGifts => 
-        prevGifts.map(gift => 
-          gift.id === selectedGiftId ? {
-            ...gift,
-            status: "Ya fue comprado",
-            purchasedAt: new Date().toISOString(),
-            purchaserName: purchaserName || ""
-          } : gift
-        )
-      );
-} else {
-      // Modo offline - actualizar localmente
+      setShowConfirmModal(false);
+      setPurchaserName('');
+      setSuccessMessage('¡Gracias por tu regalo! Este artículo ya no aparecerá como disponible.');
+      setTimeout(() => {
+        setCurrentPage('thankYou');
+      }, 2000);
+    } catch (error) {
+      console.error('Error purchasing gift:', error);
+      setErrorMessage('Error al marcar el regalo como comprado. Por favor, inténtalo de nuevo.');
+      // Intentar actualizar localmente como respaldo
       setGifts(prevGifts => 
         prevGifts.map(gift => 
           gift.id === selectedGiftId ? {
@@ -315,38 +349,64 @@ const confirmPurchase = async () => {
           } : gift
         )
       );
+      setShowConfirmModal(false);
+      setPurchaserName('');
+      setSuccessMessage('¡Gracias por tu regalo! (modo local)');
+      setTimeout(() => {
+        setCurrentPage('thankYou');
+      }, 2000);
     }
-    
-    setShowConfirmModal(false);
-    setPurchaserName('');
-    setSuccessMessage('¡Gracias por tu regalo! Este artículo ya no aparecerá como disponible.');
-    setTimeout(() => {
-      setCurrentPage('thankYou');
-    }, 2000);
- } catch (error) {
-    console.error('Error purchasing gift:', error);
-    setErrorMessage('Error al marcar el regalo como comprado. Por favor, inténtalo de nuevo.');
-    
-    // Intentar actualizar localmente como respaldo
-    setGifts(prevGifts => 
-      prevGifts.map(gift => 
-        gift.id === selectedGiftId ? {
-          ...gift,
-          status: "Ya fue comprado",
-          purchasedAt: new Date().toISOString(),
-          purchaserName: purchaserName || ""
-        } : gift
-      )
-    );
-    
-    setShowConfirmModal(false);
-    setPurchaserName('');
-    setSuccessMessage('¡Gracias por tu regalo! (modo local)');
-    setTimeout(() => {
-      setCurrentPage('thankYou');
-    }, 2000);
-  }
-};
+  };
+
+  // Efecto para limpiar mensajes
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Función para cerrar sesión
+  const handleLogout = () => {
+    setUserRole(null);
+    setCurrentPage('home');
+    setAccessCode('');
+    setAdminCode('');
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
+  // Funciones de acceso
+  const handleAccessSubmit = (e) => {
+    e.preventDefault();
+    if (accessCode === CODIGO_COMPARTIDO) {
+      setUserRole('guest');
+      setCurrentPage('gifts');
+    } else if (accessCode === CODIGO_ADMIN) {
+      setUserRole('admin');
+      setCurrentPage('admin');
+    } else {
+      setErrorMessage('Código inválido. Inténtalo de nuevo.');
+    }
+  };
+
+  // Funciones para la lista de regalos
+  const handlePurchaseClick = (giftId) => {
+    const gift = gifts.find(g => g.id === giftId);
+    if (gift.status === "Ya fue comprado") {
+      setErrorMessage('Este artículo ya fue comprado por otra persona.');
+      return;
+    }
+    setSelectedGiftId(giftId);
+    setShowConfirmModal(true);
+  };
 
   // Funciones de administración
   const handleAdminAccess = (e) => {
@@ -358,13 +418,6 @@ const confirmPurchase = async () => {
       setErrorMessage('Código de administrador inválido.');
     }
   };
-
-
-
-
-
-
-
 
   // Función para guardar cambios individuales con confirmación visual
   const saveIndividualChanges = async (giftId) => {
