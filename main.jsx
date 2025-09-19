@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import './src/index.css';
-import { getDb, initializeDatabase, getAllGifts, addNewGift as addNewGiftToDB } from './db';
+import { getDb, initializeDatabase, getAllGifts, addNewGift as addNewGiftToDB, updateGift as updateGiftInDB, deleteGift as deleteGiftInDB, resetGiftStatus as resetGiftStatusInDB, testDatabaseConnection } from './db';
 
 const App = () => {
   // Configuración
@@ -25,6 +25,7 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [savingStates, setSavingStates] = useState({}); // Estado para controlar el guardado individual
+  const [dbTestResult, setDbTestResult] = useState(null); // Estado para el resultado de la prueba de base de datos
 
   // Efecto para inicializar la base de datos y cargar los datos
   useEffect(() => {
@@ -159,7 +160,7 @@ const App = () => {
         setGifts(prevGifts => [...prevGifts, addedGift]);
         setSuccessMessage('Nuevo regalo agregado exitosamente.');
       } else {
-        // Si falló la base de datos, agregar localmente
+        // Si falla la base de datos, agregar localmente
         const localNewGift = {
           ...newGiftData,
           id: gifts.length > 0 ? Math.max(...gifts.map(g => g.id || 0)) + 1 : 1
@@ -175,11 +176,11 @@ const App = () => {
     }
   };
 
-  // Reemplaza la función updateGift con esta versión:
+  // Función para actualizar un regalo
   const updateGift = async (id, field, value) => {
     try {
       // Actualizar en la base de datos
-      const updatedGift = await window.updateGift(id, field, value);
+      const updatedGift = await updateGiftInDB(id, field, value);
       if (updatedGift) {
         // Actualizar el estado local
         setGifts(prevGifts => 
@@ -187,6 +188,7 @@ const App = () => {
             gift.id === id ? {...gift, [field]: value} : gift
           )
         );
+        setSuccessMessage('Cambios guardados exitosamente en la base de datos.');
       } else {
         // Si falla la base de datos, actualizar localmente
         setGifts(prevGifts => 
@@ -194,8 +196,13 @@ const App = () => {
             gift.id === id ? {...gift, [field]: value} : gift
           )
         );
+        setErrorMessage('Los cambios se guardaron localmente, pero hubo un problema con la base de datos.');
         console.warn('Actualización local realizada (modo offline)');
       }
+      setTimeout(() => {
+        setSuccessMessage('');
+        setErrorMessage('');
+      }, 3000);
     } catch (error) {
       console.error('Error updating gift:', error);
       setErrorMessage('Error al actualizar el regalo. Por favor, inténtalo de nuevo.');
@@ -205,39 +212,42 @@ const App = () => {
           gift.id === id ? {...gift, [field]: value} : gift
         )
       );
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
-  // Reemplaza la función deleteGift con esta versión:
+  // Función para eliminar un regalo
   const deleteGift = async (id) => {
     try {
       // Eliminar de la base de datos
-      const success = await window.deleteGift(id);
+      const success = await deleteGiftInDB(id);
       if (success) {
         // Actualizar el estado local
         setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
-        setSuccessMessage('Regalo eliminado exitosamente.');
+        setSuccessMessage('Regalo eliminado exitosamente de la base de datos.');
       } else {
         // Si falla la base de datos, eliminar localmente
         setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
-        setSuccessMessage('Regalo eliminado (modo local).');
+        setErrorMessage('El regalo se eliminó localmente, pero hubo un problema con la base de datos.');
       }
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => {
+        setSuccessMessage('');
+        setErrorMessage('');
+      }, 3000);
     } catch (error) {
       console.error('Error deleting gift:', error);
       setErrorMessage('Error al eliminar el regalo. Por favor, inténtalo de nuevo.');
       // Eliminar localmente como respaldo
       setGifts(prevGifts => prevGifts.filter(gift => gift.id !== id));
-      setSuccessMessage('Regalo eliminado (modo local).');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
-  // Reemplaza la función resetGiftStatus con esta versión:
+  // Función para reiniciar el estado de un regalo
   const resetGiftStatus = async (id) => {
     try {
       // Reiniciar estado en la base de datos
-      const updatedGift = await window.resetGiftStatus(id);
+      const updatedGift = await resetGiftStatusInDB(id);
       if (updatedGift) {
         // Actualizar el estado local
         setGifts(prevGifts => 
@@ -250,7 +260,7 @@ const App = () => {
             } : gift
           )
         );
-        setSuccessMessage('Estado del regalo reiniciado exitosamente.');
+        setSuccessMessage('Estado del regalo reiniciado exitosamente en la base de datos.');
       } else {
         // Si falla la base de datos, reiniciar localmente
         setGifts(prevGifts => 
@@ -263,9 +273,12 @@ const App = () => {
             } : gift
           )
         );
-        setSuccessMessage('Estado del regalo reiniciado (modo local).');
+        setErrorMessage('El estado se reinició localmente, pero hubo un problema con la base de datos.');
       }
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => {
+        setSuccessMessage('');
+        setErrorMessage('');
+      }, 3000);
     } catch (error) {
       console.error('Error resetting gift status:', error);
       setErrorMessage('Error al reiniciar el estado del regalo. Por favor, inténtalo de nuevo.');
@@ -280,12 +293,11 @@ const App = () => {
           } : gift
         )
       );
-      setSuccessMessage('Estado del regalo reiniciado (modo local).');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
-  // Reemplaza la función confirmPurchase con esta versión:
+  // Función para confirmar compra
   const confirmPurchase = async () => {
     try {
       const sql = getDb();
@@ -316,6 +328,7 @@ const App = () => {
             } : gift
           )
         );
+        setSuccessMessage('¡Gracias por tu regalo! Este artículo ya no aparecerá como disponible.');
       } else {
         // Modo offline - actualizar localmente
         setGifts(prevGifts => 
@@ -328,11 +341,13 @@ const App = () => {
             } : gift
           )
         );
+        setErrorMessage('Tu compra se registró localmente, pero hubo un problema con la base de datos.');
       }
       setShowConfirmModal(false);
       setPurchaserName('');
-      setSuccessMessage('¡Gracias por tu regalo! Este artículo ya no aparecerá como disponible.');
       setTimeout(() => {
+        setSuccessMessage('');
+        setErrorMessage('');
         setCurrentPage('thankYou');
       }, 2000);
     } catch (error) {
@@ -351,11 +366,28 @@ const App = () => {
       );
       setShowConfirmModal(false);
       setPurchaserName('');
-      setSuccessMessage('¡Gracias por tu regalo! (modo local)');
       setTimeout(() => {
+        setErrorMessage('');
         setCurrentPage('thankYou');
       }, 2000);
     }
+  };
+
+  // Función para probar la conexión a la base de datos
+  const handleTestDatabase = async () => {
+    setDbTestResult('Probando conexión a la base de datos...');
+    try {
+      const result = await testDatabaseConnection();
+      if (result.success) {
+        setDbTestResult(`✅ Conexión exitosa! ${result.message}`);
+      } else {
+        setDbTestResult(`❌ Error: ${result.message}`);
+      }
+    } catch (error) {
+      setDbTestResult(`❌ Error inesperado: ${error.message}`);
+    }
+    // Limpiar el mensaje después de 5 segundos
+    setTimeout(() => setDbTestResult(null), 5000);
   };
 
   // Efecto para limpiar mensajes
@@ -381,6 +413,7 @@ const App = () => {
     setAdminCode('');
     setErrorMessage('');
     setSuccessMessage('');
+    setDbTestResult(null);
   };
 
   // Funciones de acceso
@@ -787,6 +820,12 @@ const App = () => {
                 + Agregar Regalo
               </button>
               <button
+                onClick={handleTestDatabase}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                🧪 Probar Base de Datos
+              </button>
+              <button
                 onClick={saveAllChanges}
                 disabled={savingStates.all}
                 className={`px-4 py-2 rounded-md transition-colors ${
@@ -815,6 +854,13 @@ const App = () => {
               </button>
             </div>
           </div>
+
+          {/* Mostrar resultado de la prueba de base de datos */}
+          {dbTestResult && (
+            <div className="mb-6 p-4 rounded-md bg-blue-100 text-blue-800 border border-blue-300">
+              <p className="font-medium">{dbTestResult}</p>
+            </div>
+          )}
 
           <div className="space-y-6">
             {gifts.map(gift => (

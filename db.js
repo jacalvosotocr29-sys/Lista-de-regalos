@@ -21,6 +21,26 @@ export const getDb = () => {
   }
 };
 
+// Función para probar la conexión a la base de datos
+export const testDatabaseConnection = async () => {
+  try {
+    const sql = getDb();
+    if (!sql) {
+      return { success: false, message: 'No se pudo establecer conexión con la base de datos.' };
+    }
+    
+    // Realizar una consulta simple para probar la conexión
+    const result = await sql`SELECT NOW() as current_time`;
+    return { 
+      success: true, 
+      message: `Conexión exitosa! Hora del servidor: ${new Date(result[0].current_time).toLocaleString()}` 
+    };
+  } catch (error) {
+    console.error('Error al probar la conexión a la base de datos:', error);
+    return { success: false, message: `Error: ${error.message}` };
+  }
+};
+
 // Función mejorada para inicializar la base de datos
 export const initializeDatabase = async () => {
   try {
