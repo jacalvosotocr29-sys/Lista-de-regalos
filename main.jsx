@@ -373,35 +373,38 @@ const App = () => {
     }
   };
 
-// Función para probar la conexión a la base de datos
-const handleTestDatabase = async () => {
-  setDbTestResult('🔍 Probando conexión a la base de datos...');
-  try {
-    console.log('📝 Iniciando prueba de conexión...');
-    
-    // Mostrar todas las variables de entorno disponibles
-    console.log('📋 Variables de entorno:', {
-      'VITE_NETLIFY_DATABASE_URL': import.meta.env.VITE_NETLIFY_DATABASE_URL ? '✅ Definida' : '❌ No definida',
-      'NETLIFY_DATABASE_URL': process.env.NETLIFY_DATABASE_URL ? '✅ Definida' : '❌ No definida',
-      'VITE_NETLIFY_DATABASE_URL value': import.meta.env.VITE_NETLIFY_DATABASE_URL || 'N/A',
-      'NETLIFY_DATABASE_URL value': process.env.NETLIFY_DATABASE_URL || 'N/A'
-    });
-    
-    const result = await testDatabaseConnection();
-    if (result.success) {
-      setDbTestResult(`✅ ${result.message}`);
-      console.log('✅ Prueba de conexión exitosa');
-    } else {
-      setDbTestResult(`❌ ${result.message}`);
-      console.log('❌ Prueba de conexión fallida:', result.message);
+  // Función para probar la conexión a la base de datos
+  const handleTestDatabase = async () => {
+    setDbTestResult('Probando conexión a la base de datos...');
+    try {
+      const result = await testDatabaseConnection();
+      if (result.success) {
+        setDbTestResult(`✅ ${result.message}`);
+      } else {
+        setDbTestResult(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error inesperado al probar la conexión:', error);
+      setDbTestResult(`❌ Error inesperado: ${error.message}`);
     }
-  } catch (error) {
-    console.error('❌ Error inesperado al probar la conexión:', error);
-    setDbTestResult(`❌ Error inesperado: ${error.message}\n\nVerifica la consola para más detalles.`);
-  }
-  // Limpiar el mensaje después de 10 segundos
-  setTimeout(() => setDbTestResult(null), 10000);
-};
+    // Limpiar el mensaje después de 5 segundos
+    setTimeout(() => setDbTestResult(null), 5000);
+  };
+
+  // Efecto para limpiar mensajes
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   // Función para cerrar sesión
   const handleLogout = () => {
