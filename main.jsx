@@ -373,37 +373,36 @@ const App = () => {
     }
   };
 
-  // Función para probar la conexión a la base de datos
-  const handleTestDatabase = async () => {
-    setDbTestResult('Probando conexión a la base de datos...');
-    try {
-      const result = await testDatabaseConnection();
-      if (result.success) {
-        setDbTestResult(`✅ Conexión exitosa! ${result.message}`);
-      } else {
-        setDbTestResult(`❌ Error: ${result.message}`);
-      }
-    } catch (error) {
-      setDbTestResult(`❌ Error inesperado: ${error.message}`);
+// Función para probar la conexión a la base de datos
+const handleTestDatabase = async () => {
+  setDbTestResult('Probando conexión a la base de datos...');
+  try {
+    console.log('Iniciando prueba de conexión...');
+    console.log('Variables de entorno disponibles:', {
+      NETLIFY_DATABASE_URL: process.env.NETLIFY_DATABASE_URL ? 'Presente' : 'Ausente',
+      NETLIFY_DATABASE_URL_UNPOOLED: process.env.NETLIFY_DATABASE_URL_UNPOOLED ? 'Presente' : 'Ausente'
+    });
+    
+    const result = await testDatabaseConnection();
+    if (result.success) {
+      setDbTestResult(`✅ ${result.message}`);
+      console.log('Prueba de conexión exitosa');
+    } else {
+      setDbTestResult(`❌ ${result.message}`);
+      console.log('Prueba de conexión fallida:', result.message);
+      
+      // Mostrar información adicional de diagnóstico
+      setTimeout(() => {
+        setDbTestResult(prev => `${prev}\n\nℹ️ Diagnóstico: ${process.env.NETLIFY_DATABASE_URL ? 'La variable de entorno existe' : 'La variable de entorno NETLIFY_DATABASE_URL no está definida'}`);
+      }, 1000);
     }
-    // Limpiar el mensaje después de 5 segundos
-    setTimeout(() => setDbTestResult(null), 5000);
-  };
-
-  // Efecto para limpiar mensajes
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage]);
-
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
+  } catch (error) {
+    console.error('Error inesperado al probar la conexión:', error);
+    setDbTestResult(`❌ Error inesperado: ${error.message}\n\nVerifica la consola para más detalles.`);
+  }
+  // Limpiar el mensaje después de 10 segundos
+  setTimeout(() => setDbTestResult(null), 10000);
+};
 
   // Función para cerrar sesión
   const handleLogout = () => {

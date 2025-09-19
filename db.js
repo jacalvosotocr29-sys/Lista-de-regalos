@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless';
 // Función para obtener la conexión a la base de datos
 export const getDb = () => {
   try {
-    // Primero intentamos obtener la URL de la base de datos
+    // Obtener la URL de la base de datos de las variables de entorno
     const databaseUrl = process.env.NETLIFY_DATABASE_URL;
     
     if (!databaseUrl) {
@@ -11,9 +11,22 @@ export const getDb = () => {
       return null;
     }
     
-    // Intentamos crear la conexión
-    const sql = neon(databaseUrl);
-    console.log('Conexión a la base de datos establecida correctamente.');
+    console.log('URL de la base de datos obtenida correctamente');
+    
+    // Crear la conexión con opciones específicas para Neon
+    const sql = neon(databaseUrl, {
+      // Configuración para manejar la conexión SSL correctamente
+      ssl: {
+        rejectUnauthorized: false // Necesario para algunas conexiones con Neon
+      },
+      // Opciones adicionales para mejorar la estabilidad
+      connection: {
+        statement_timeout: 5000, // 5 segundos de timeout
+        query_timeout: 5000
+      }
+    });
+    
+    console.log('Conexión a la base de datos configurada correctamente.');
     return sql;
   } catch (error) {
     console.error('Error al crear la conexión a la base de datos:', error);
@@ -30,14 +43,20 @@ export const testDatabaseConnection = async () => {
     }
     
     // Realizar una consulta simple para probar la conexión
+    console.log('Probando conexión a la base de datos...');
     const result = await sql`SELECT NOW() as current_time`;
+    console.log('Prueba de conexión exitosa:', result);
+    
     return { 
       success: true, 
-      message: `Conexión exitosa! Hora del servidor: ${new Date(result[0].current_time).toLocaleString()}` 
+      message: `✅ Conexión exitosa! Hora del servidor: ${new Date(result[0].current_time).toLocaleString()}` 
     };
   } catch (error) {
     console.error('Error al probar la conexión a la base de datos:', error);
-    return { success: false, message: `Error: ${error.message}` };
+    return { 
+      success: false, 
+      message: `❌ Error: ${error.message}. URL: ${process.env.NETLIFY_DATABASE_URL ? 'Presente' : 'Ausente'}`
+    };
   }
 };
 
@@ -51,6 +70,8 @@ export const initializeDatabase = async () => {
       console.warn('No se pudo establecer conexión con la base de datos. Usando datos de respaldo.');
       return false;
     }
+    
+    console.log('Creando tabla si no existe...');
     
     // Crear tabla si no existe
     await sql`
@@ -72,6 +93,7 @@ export const initializeDatabase = async () => {
     console.log('Tabla gifts creada o verificada.');
     
     // Verificar si la tabla está vacía
+    console.log('Verificando si la tabla está vacía...');
     const countResult = await sql`SELECT COUNT(*) as count FROM gifts`;
     const count = parseInt(countResult[0].count);
     
@@ -159,6 +181,7 @@ export const initializeDatabase = async () => {
       // Insertar cada regalo individualmente para mejor manejo de errores
       for (const gift of initialGifts) {
         try {
+          console.log(`Insertando regalo: ${gift.item}`);
           await sql`
             INSERT INTO gifts (
               store, store_link, item, description, quantity, price, 
@@ -169,20 +192,22 @@ export const initializeDatabase = async () => {
               ${gift.purchaser_name}, ${gift.image_url}
             )
           `;
-          console.log(`Regalo insertado: ${gift.item}`);
+          console.log(`✓ Regalo insertado: ${gift.item}`);
         } catch (error) {
           console.error(`Error insertando regalo "${gift.item}":`, error);
         }
       }
       
-      console.log('Datos iniciales insertados exitosamente.');
+      console.log('✓ Datos iniciales insertados exitosamente.');
     } else {
-      console.log('La tabla ya contiene datos. No se insertaron datos iniciales.');
+      console.log('✓ La tabla ya contiene datos. No se insertaron datos iniciales.');
     }
     
     return true;
   } catch (error) {
-    console.error('Error crítico en initializeDatabase:', error);
+    console.error('❌ Error crítico en initializeDatabase:', error);
+    console.error('Detalles del error:', error.message);
+    console.error('Stack trace:', error.stack);
     return false;
   }
 };
@@ -276,6 +301,7 @@ export const getAllGifts = async () => {
       ];
     }
     
+    console.log('Obteniendo todos los regalos de la base de datos...');
     const result = await sql`
       SELECT 
         id,
@@ -293,9 +319,11 @@ export const getAllGifts = async () => {
       ORDER BY id
     `;
     
+    console.log(`✓ Se obtuvieron ${result.length} regalos de la base de datos.`);
     return result;
   } catch (error) {
-    console.error('Error al obtener regalos:', error);
+    console.error('❌ Error al obtener regalos:', error);
+    console.error('Detalles del error:', error.message);
     // En caso de error, devolvemos los datos de respaldo
     return [
       {
@@ -389,6 +417,7 @@ export const addNewGift = async (giftData) => {
       return null;
     }
     
+    console.log('Agregando nuevo regalo a la base de datos...');
     const result = await sql`
       INSERT INTO gifts (
         store, store_link, item, description, quantity, price, status, purchased_at, purchaser_name, image_url
@@ -400,9 +429,11 @@ export const addNewGift = async (giftData) => {
       RETURNING *
     `;
     
+    console.log('✓ Nuevo regalo agregado exitosamente:', result[0]);
     return result[0];
   } catch (error) {
-    console.error('Error al agregar nuevo regalo:', error);
+    console.error('❌ Error al agregar nuevo regalo:', error);
+    console.error('Detalles del error:', error.message);
     return null;
   }
 };
@@ -415,6 +446,8 @@ export const updateGift = async (id, field, value) => {
       console.warn('No hay conexión a la base de datos. No se puede actualizar el regalo.');
       return null;
     }
+    
+    console.log(`Actualizando regalo ID: ${id}, campo: ${field}, valor: ${value}`);
     
     // Mapear los nombres de campos de JavaScript a SQL
     const fieldMap = {
@@ -434,9 +467,11 @@ export const updateGift = async (id, field, value) => {
       RETURNING *
     `;
     
+    console.log('✓ Regalo actualizado exitosamente:', result[0]);
     return result[0];
   } catch (error) {
-    console.error(`Error al actualizar el regalo (ID: ${id}, campo: ${field}):`, error);
+    console.error(`❌ Error al actualizar el regalo (ID: ${id}, campo: ${field}):`, error);
+    console.error('Detalles del error:', error.message);
     throw error;
   }
 };
@@ -450,14 +485,17 @@ export const deleteGift = async (id) => {
       return false;
     }
     
+    console.log(`Eliminando regalo ID: ${id}`);
     await sql`
       DELETE FROM gifts 
       WHERE id = ${id}
     `;
     
+    console.log('✓ Regalo eliminado exitosamente');
     return true;
   } catch (error) {
-    console.error(`Error al eliminar el regalo (ID: ${id}):`, error);
+    console.error(`❌ Error al eliminar el regalo (ID: ${id}):`, error);
+    console.error('Detalles del error:', error.message);
     throw error;
   }
 };
@@ -471,6 +509,7 @@ export const resetGiftStatus = async (id) => {
       return null;
     }
     
+    console.log(`Reiniciando estado del regalo ID: ${id}`);
     const result = await sql`
       UPDATE gifts 
       SET 
@@ -481,9 +520,11 @@ export const resetGiftStatus = async (id) => {
       RETURNING *
     `;
     
+    console.log('✓ Estado del regalo reiniciado exitosamente:', result[0]);
     return result[0];
   } catch (error) {
-    console.error(`Error al reiniciar el estado del regalo (ID: ${id}):`, error);
+    console.error(`❌ Error al reiniciar el estado del regalo (ID: ${id}):`, error);
+    console.error('Detalles del error:', error.message);
     throw error;
   }
 };
@@ -493,3 +534,5 @@ window.addNewGift = addNewGift;
 window.updateGift = updateGift;
 window.deleteGift = deleteGift;
 window.resetGiftStatus = resetGiftStatus;
+window.testDatabaseConnection = testDatabaseConnection;
+window.getDb = getDb;
