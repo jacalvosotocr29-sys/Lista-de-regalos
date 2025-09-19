@@ -3,15 +3,21 @@ import { neon } from '@neondatabase/serverless';
 // Función para obtener la conexión a la base de datos
 export const getDb = () => {
   try {
-    // Obtener la URL de la base de datos de las variables de entorno
-    const databaseUrl = process.env.NETLIFY_DATABASE_URL;
+    // Primero intentamos obtener la URL de la base de datos desde la variable de entorno de Vite
+    let databaseUrl = import.meta.env.VITE_NETLIFY_DATABASE_URL;
     
+    // Si no está definida, intentamos con la variable de entorno original
     if (!databaseUrl) {
-      console.warn('NETLIFY_DATABASE_URL no está definida. Usando modo de respaldo.');
+      databaseUrl = process.env.NETLIFY_DATABASE_URL;
+    }
+    
+    // Si aún no está definida, mostramos un error
+    if (!databaseUrl) {
+      console.warn('❌ Ni VITE_NETLIFY_DATABASE_URL ni NETLIFY_DATABASE_URL están definidas.');
       return null;
     }
     
-    console.log('URL de la base de datos obtenida correctamente');
+    console.log('✅ URL de la base de datos obtenida correctamente');
     
     // Crear la conexión con opciones específicas para Neon
     const sql = neon(databaseUrl, {
@@ -26,10 +32,10 @@ export const getDb = () => {
       }
     });
     
-    console.log('Conexión a la base de datos configurada correctamente.');
+    console.log('✅ Conexión a la base de datos configurada correctamente.');
     return sql;
   } catch (error) {
-    console.error('Error al crear la conexión a la base de datos:', error);
+    console.error('❌ Error al crear la conexión a la base de datos:', error);
     return null;
   }
 };

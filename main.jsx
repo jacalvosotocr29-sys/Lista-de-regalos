@@ -375,29 +375,28 @@ const App = () => {
 
 // Función para probar la conexión a la base de datos
 const handleTestDatabase = async () => {
-  setDbTestResult('Probando conexión a la base de datos...');
+  setDbTestResult('🔍 Probando conexión a la base de datos...');
   try {
-    console.log('Iniciando prueba de conexión...');
-    console.log('Variables de entorno disponibles:', {
-      NETLIFY_DATABASE_URL: process.env.NETLIFY_DATABASE_URL ? 'Presente' : 'Ausente',
-      NETLIFY_DATABASE_URL_UNPOOLED: process.env.NETLIFY_DATABASE_URL_UNPOOLED ? 'Presente' : 'Ausente'
+    console.log('📝 Iniciando prueba de conexión...');
+    
+    // Mostrar todas las variables de entorno disponibles
+    console.log('📋 Variables de entorno:', {
+      'VITE_NETLIFY_DATABASE_URL': import.meta.env.VITE_NETLIFY_DATABASE_URL ? '✅ Definida' : '❌ No definida',
+      'NETLIFY_DATABASE_URL': process.env.NETLIFY_DATABASE_URL ? '✅ Definida' : '❌ No definida',
+      'VITE_NETLIFY_DATABASE_URL value': import.meta.env.VITE_NETLIFY_DATABASE_URL || 'N/A',
+      'NETLIFY_DATABASE_URL value': process.env.NETLIFY_DATABASE_URL || 'N/A'
     });
     
     const result = await testDatabaseConnection();
     if (result.success) {
       setDbTestResult(`✅ ${result.message}`);
-      console.log('Prueba de conexión exitosa');
+      console.log('✅ Prueba de conexión exitosa');
     } else {
       setDbTestResult(`❌ ${result.message}`);
-      console.log('Prueba de conexión fallida:', result.message);
-      
-      // Mostrar información adicional de diagnóstico
-      setTimeout(() => {
-        setDbTestResult(prev => `${prev}\n\nℹ️ Diagnóstico: ${process.env.NETLIFY_DATABASE_URL ? 'La variable de entorno existe' : 'La variable de entorno NETLIFY_DATABASE_URL no está definida'}`);
-      }, 1000);
+      console.log('❌ Prueba de conexión fallida:', result.message);
     }
   } catch (error) {
-    console.error('Error inesperado al probar la conexión:', error);
+    console.error('❌ Error inesperado al probar la conexión:', error);
     setDbTestResult(`❌ Error inesperado: ${error.message}\n\nVerifica la consola para más detalles.`);
   }
   // Limpiar el mensaje después de 10 segundos
